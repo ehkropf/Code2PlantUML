@@ -1,4 +1,7 @@
 #include <algorithm>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 #include <fstream>
 #include <iostream>
 #include <iterator>
@@ -6,9 +9,6 @@
 #include <map>
 #include <set>
 #include <sstream>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include <unistd.h>
 #include <vector>
 // https://developer.mozilla.org/en-US/docs/Mozilla/Developer_guide/Coding_Style
@@ -26,15 +26,15 @@ public:
   void setIsChild(const bool isChild) { m_isChild = isChild; }
   void setMember(const std::string& access, const std::string& member)
   {
-    m_members.push_back(std::make_pair(access, member));
+    m_members.emplace_back(access, member);
   }
   std::string text()
   {
-    std::string result = "";
+    std::string result;
     result += m_name + '\n';
-    for (auto itor = m_members.begin(); itor != m_members.end(); itor++) {
-      result += "   " + itor->first;
-      result += "   " + itor->second + '\n';
+    for (const auto& m : m_members) {
+      result += "   " + m.first;
+      result += "   " + m.second + '\n';
     }
     return result;
   }
@@ -44,14 +44,13 @@ public:
     // # protected
     // ~ package private
     // + public
-    int index = 0;
     if (m_name.empty())
       return;
     // ofs.open(m_name + ".puml");
     // ofs << "@startuml\n";
     if (m_isChild) {
-      for (auto itor = m_parent.begin(); itor != m_parent.end(); itor++) {
-        ofs << m_name << " <|-- " << *itor << "\n";
+      for (const auto& itor : m_parent) {
+        ofs << m_name << " <|-- " << itor << "\n";
       }
     }
     ofs << "class " << m_name << " {\n";
@@ -60,24 +59,24 @@ public:
     // ofs << " #field2\n";
     // ofs << " ~method1()\n";
     // ofs << " +method2()\n";
-    for (auto itor = m_members.begin(); itor != m_members.end(); itor++) {
+    for (const auto& m : m_members) {
       std::string result;
-      if (itor->first.compare("public") == 0)
+      if (m.first == "public")
         result += " +";
-      else if (itor->first.compare("protected") == 0)
+      else if (m.first == "protected")
         result += " #";
-      else if (itor->first.compare("private") == 0)
+      else if (m.first == "private")
         result += " -";
       else
         result += " ?";
-      result += itor->second + '\n';
+      result += m.second + '\n';
       ofs << result;
     }
     ofs << "}\n";
     // ofs << "@enduml\n";
     // ofs.close();
   }
-  void dot()
+  static void dot()
   {
     std::ofstream ofs;
     ofs.open("mamba.dot");
@@ -122,7 +121,7 @@ public:
     std::getline(is, l.data);
     return is;
   }
-  operator std::string() const { return data; }
+  operator std::string() const { return data; } //NOLINT (allow implicit)
 };
 struct line_reader : std::ctype<char>
 {
@@ -153,24 +152,18 @@ private:
   std::string type;
 
 public:
-  Tag()
-    : name("")
-    , file("")
-    , address("")
-    , type("")
-
-  {}
+  Tag() = default;
   void setName(const std::string& _name) { name = _name; }
   void setFile(const std::string& _file) { file = _file; }
   void setAddress(const std::string& _address) { address = _address; }
   void setType(const std::string& _type) { type = _type; }
-  const std::string getName() { return name; }
-  const std::string getFile() { return file; }
-  const std::string getAddress() { return address; }
-  const std::string getType() { return type; }
+  std::string getName() { return name; }
+  std::string getFile() { return file; }
+  std::string getAddress() { return address; }
+  std::string getType() { return type; }
   bool typeCompare(const std::string& _type)
   {
-    return type.compare(_type) == 0;
+    return type == _type;
   }
   friend std::ostream& operator<<(std::ostream& os, Tag const& t)
   {
@@ -213,9 +206,9 @@ processTags(const std::string& line)
     tag.setAddress(*itor);
     ++itor;
     tag.setType(*itor);
-    if (0) { // debug
-      std::cout << tag << "\t";
-    }
+//    if (0) { // debug
+//      std::cout << tag << "\t";
+//    }
     ++itor;
     // parse fields:
     for (; itor != lines.end(); itor++) {
@@ -225,9 +218,9 @@ processTags(const std::string& line)
 
       // change :: to __ due to problem in plantuml parsing...
       std::replace_if(fieldValue.begin(), fieldValue.end(), IsColon, '_');
-      if (0) { // debug
-        std::cout << "[" << fieldName << "|" << fieldValue << "]";
-      }
+//      if (0) { // debug
+//        std::cout << "[" << fieldName << "|" << fieldValue << "]";
+//      }
       field.insert(std::make_pair(fieldName, fieldValue));
     }
     std::cout << std::endl;
@@ -251,22 +244,22 @@ processTags(const std::string& line)
   if (tag.typeCompare("p")) {
     isMemberFunction = true;
   }
-  for (auto itor = field.begin(); itor != field.end(); itor++) {
-    if (itor->first.compare("namespace") == 0) {
-      className = itor->second + "__";
+  for (auto & m : field) {
+    if (m.first == "namespace") {
+      className = m.second + "__";
     }
-    if (itor->first.compare("struct") == 0) {
-      className = itor->second;
+    if (m.first == "struct") {
+      className = m.second;
     }
-    if (itor->first.compare("class") == 0) {
-      className = itor->second;
+    if (m.first == "class") {
+      className = m.second;
     }
-    if (itor->first.compare("access") == 0) {
-      access = itor->second;
+    if (m.first == "access") {
+      access = m.second;
     }
-    if (itor->first.compare("inherits") == 0) {
+    if (m.first == "inherits") {
       // QObject,CThread
-      std::istringstream iss(itor->second);
+      std::istringstream iss(m.second);
       std::vector<std::string> result(
         (std::istream_iterator<commaDelimiter>(iss)),
         std::istream_iterator<commaDelimiter>());
@@ -286,10 +279,10 @@ processTags(const std::string& line)
   } else if (isMember) {
     insert_class(className, access, tag.getName());
   }
-  if (0) { // debug
-    std::cout << className << "_" << access << "|" << tag.getName() << "|"
-              << std::endl;
-  }
+//  if (0) { // debug
+//    std::cout << className << "_" << access << "|" << tag.getName() << "|"
+//              << std::endl;
+//  }
 }
 void
 global_uml_head(std::ofstream& ofs)
@@ -323,10 +316,10 @@ main(int argc, char** argv)
   std::ofstream puml_file;
   puml_file.open(std::string(argv[1]) + ".puml");
   global_uml_head(puml_file);
-  for (auto itor = classes.begin(); itor != classes.end(); itor++) {
+  for (auto& classe : classes) {
     // std::cout << itor->second.text() << std::endl;
     // itor->second.dot();
-    itor->second.uml(puml_file);
+    classe.second.uml(puml_file);
   }
   global_uml_footer(puml_file);
 

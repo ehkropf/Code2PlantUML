@@ -1,8 +1,9 @@
 cmake_minimum_required(VERSION 3.5)
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS true)
 
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 -ggdb -Wall -std=c++14")
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wall -std=c++14")
+set(CMAKE_CXX_FLAGS "-Wall -std=c++17")
+set(CMAKE_CXX_FLAGS_DEBUG "-O0 -ggdb")
 
 project (genGraph)
 
