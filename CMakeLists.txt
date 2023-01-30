@@ -5,7 +5,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS true)
 set(CMAKE_CXX_FLAGS "-Wall -std=c++17")
 set(CMAKE_CXX_FLAGS_DEBUG "-O0 -ggdb")
 
-project (cpp2puml)
+project (ctags2puml)
 
 
 add_executable(${PROJECT_NAME} main.cpp)
